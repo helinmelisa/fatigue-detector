@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from src.landmarks import LEFT_EYE, RIGHT_EYE, MOUTH
 from src.ear import eye_aspect_ratio, EAR_THRESHOLD, EAR_CONSEC_FRAMES
+from src.mar import mouth_aspect_ratio, MAR_THRESHOLD, MAR_CONSEC_FRAMES
 import mediapipe as mp
 
 
@@ -16,6 +17,8 @@ class FatigueDetector:
         )
         self.closed_frames = 0
         self.drowsy = False
+        self.yawn_frames = 0
+        self.yawning = False
 
     def process_frame(self, frame):
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -44,6 +47,20 @@ class FatigueDetector:
 
         return ear
 
+    def update_mar(self, face_landmarks, frame_shape):
+        mouth = self.get_landmark_coords(face_landmarks, MOUTH, frame_shape)
+        mar = mouth_aspect_ratio(mouth)
+
+        if mar > MAR_THRESHOLD:
+            self.yawn_frames += 1
+            if self.yawn_frames >= MAR_CONSEC_FRAMES:
+                self.yawning = True
+        else:
+            self.yawn_frames = 0
+            self.yawning = False
+
+        return mar
+
     def draw_eye_mouth_landmarks(self, frame, results):
         if not results.multi_face_landmarks:
             return frame
@@ -60,13 +77,22 @@ class FatigueDetector:
 
         return frame
 
-    def draw_ear_info(self, frame, ear):
-        color = (0, 0, 255) if self.drowsy else (0, 255, 0)
+    def draw_info(self, frame, ear, mar):
+        ear_color = (0, 0, 255) if self.drowsy else (0, 255, 0)
+        mar_color = (0, 0, 255) if self.yawning else (0, 255, 0)
+
         cv2.putText(frame, f"EAR: {ear:.2f}", (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, ear_color, 2)
+        cv2.putText(frame, f"MAR: {mar:.2f}", (10, 60),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, mar_color, 2)
+
         if self.drowsy:
-            cv2.putText(frame, "DROWSINESS DETECTED!", (10, 65),
+            cv2.putText(frame, "DROWSINESS DETECTED!", (10, 100),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        if self.yawning:
+            cv2.putText(frame, "YAWN DETECTED!", (10, 130),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+
         return frame
 
     def release(self):

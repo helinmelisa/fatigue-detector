@@ -3,7 +3,7 @@ from src.detector import FatigueDetector
 
 
 def main():
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     detector = FatigueDetector()
 
     print("Press 'q' to quit.")
@@ -18,7 +18,8 @@ def main():
 
         if results.multi_face_landmarks:
             ear = detector.update_ear(results.multi_face_landmarks[0], frame.shape)
-            frame = detector.draw_ear_info(frame, ear)
+            mar = detector.update_mar(results.multi_face_landmarks[0], frame.shape)
+            frame = detector.draw_info(frame, ear, mar)
 
         cv2.imshow("Fatigue Detector", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
