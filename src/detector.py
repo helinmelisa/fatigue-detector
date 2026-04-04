@@ -3,6 +3,7 @@ import numpy as np
 from src.landmarks import LEFT_EYE, RIGHT_EYE, MOUTH
 from src.ear import eye_aspect_ratio, EAR_THRESHOLD, EAR_CONSEC_FRAMES
 from src.mar import mouth_aspect_ratio, MAR_THRESHOLD, MAR_CONSEC_FRAMES
+from src.fatigue_score import compute_fatigue_score, fatigue_level
 import mediapipe as mp
 
 
@@ -78,20 +79,23 @@ class FatigueDetector:
         return frame
 
     def draw_info(self, frame, ear, mar):
-        ear_color = (0, 0, 255) if self.drowsy else (0, 255, 0)
-        mar_color = (0, 0, 255) if self.yawning else (0, 255, 0)
+        score = compute_fatigue_score(ear, mar, self.closed_frames, self.yawn_frames)
+        level, level_color = fatigue_level(score)
 
         cv2.putText(frame, f"EAR: {ear:.2f}", (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, ear_color, 2)
-        cv2.putText(frame, f"MAR: {mar:.2f}", (10, 60),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, mar_color, 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 1)
+        cv2.putText(frame, f"MAR: {mar:.2f}", (10, 55),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 1)
+        cv2.putText(frame, f"Score: {score}", (10, 80),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.65, level_color, 2)
+        cv2.putText(frame, level, (10, 110),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, level_color, 2)
 
-        if self.drowsy:
-            cv2.putText(frame, "DROWSINESS DETECTED!", (10, 100),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-        if self.yawning:
-            cv2.putText(frame, "YAWN DETECTED!", (10, 130),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        # Score bar
+        bar_x, bar_y, bar_w, bar_h = 10, 125, 200, 12
+        cv2.rectangle(frame, (bar_x, bar_y), (bar_x + bar_w, bar_y + bar_h), (50, 50, 50), -1)
+        filled = int(bar_w * score / 100)
+        cv2.rectangle(frame, (bar_x, bar_y), (bar_x + filled, bar_y + bar_h), level_color, -1)
 
         return frame
 
