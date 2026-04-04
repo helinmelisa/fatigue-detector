@@ -14,7 +14,7 @@ def main():
             break
 
         results = detector.process_frame(frame)
-        frame = detector.draw_landmarks(frame, results)
+        frame = detector.draw_eye_mouth_landmarks(frame, results)
 
         cv2.imshow("Fatigue Detector", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
