@@ -1,11 +1,27 @@
 import cv2
+import argparse
 from src.detector import FatigueDetector
 
 
 def main():
-    cap = cv2.VideoCapture(1)
-    detector = FatigueDetector()
+    parser = argparse.ArgumentParser(description="Fatigue Detector")
+    parser.add_argument("--source", default=None,
+                        help="Path to video file, or camera index (default: 1)")
+    args = parser.parse_args()
 
+    if args.source is None:
+        source = 1
+    elif args.source.isdigit():
+        source = int(args.source)
+    else:
+        source = args.source
+
+    cap = cv2.VideoCapture(source)
+    if not cap.isOpened():
+        print(f"Error: could not open source '{source}'")
+        return
+
+    detector = FatigueDetector()
     print("Press 'q' to quit.")
 
     while cap.isOpened():
