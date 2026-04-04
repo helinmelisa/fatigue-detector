@@ -16,6 +16,10 @@ def main():
         results = detector.process_frame(frame)
         frame = detector.draw_eye_mouth_landmarks(frame, results)
 
+        if results.multi_face_landmarks:
+            ear = detector.update_ear(results.multi_face_landmarks[0], frame.shape)
+            frame = detector.draw_ear_info(frame, ear)
+
         cv2.imshow("Fatigue Detector", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
